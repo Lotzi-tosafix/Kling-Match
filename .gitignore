@@ -1,0 +1,78 @@
+# ─────────────────────────────────────────────
+# Kling-Match — .gitignore
+# ─────────────────────────────────────────────
+
+# ── Python cache ──────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ──────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── PyInstaller build output ──────────────────
+dist/
+build/Kling-Match/
+*.spec.bak
+
+# ── Eggs / packaging ──────────────────────────
+*.egg-info/
+*.egg
+dist/
+build/*.egg-info
+
+# ── IDE / editor ──────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ── Kiro AI workspace files ───────────────────
+.kiro/
+
+# ── repomix output ────────────────────────────
+repomix-output*.xml
+
+# ── Testing / coverage ────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+*.coverage
+
+# ── OS files ──────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ── Logs & temp ───────────────────────────────
+*.log
+load_timing.txt
+*.tmp
+*.bak
+
+# ── ML model weights (גדולים מדי לגיט) ────────
+models/MuQ/model.safetensors
+models/MuQ/config.json
+SongFormer/src/SongFormer/ckpts/*.safetensors
+SongFormer/src/SongFormer/ckpts/*.pt
+SongFormer/src/SongFormer/ckpts/MusicFM/*.pt
+SongFormer/src/SongFormer/ckpts/MusicFM/*.json
+
+# ── SongFormer third-party (ספריות חיצוניות) ──
+SongFormer/src/third_party/
+
+# ── Node / JS (אם יהיה בעתיד) ────────────────
+node_modules/
+
+# ── קבצי פיתוח מקומיים ────────────────────────
+test_torch.py
+הפעל.bat
+tests/
+
+# ── models dir (נכלל בsetup/portable, לא בגיט) ─
+models/
