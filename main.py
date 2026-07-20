@@ -59,36 +59,27 @@ def main() -> int:
     # Configure ffmpeg path immediately — before any pydub import
     _configure_ffmpeg()
 
-    from PyQt6.QtWidgets import QApplication, QMessageBox
+    from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
     app.setApplicationName("Kling-Match")
     app.setOrganizationName("KlingMatch")
 
     from kling_match.app_state import AppState
-    from kling_match.core.songformer_wrapper import SongFormerWrapper
     from kling_match.core.auto_updater import start_update_check
+    from kling_match.core.model_downloader import ensure_models
     from kling_match.ui.main_window import MainWindow
     from kling_match.ui.styles import apply_styles
 
     apply_styles(app)
 
-    if not SongFormerWrapper.check_model_exists(_SONGFORMER_DIR):
-        _close_pyinstaller_splash()
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Icon.Critical)
-        msg.setWindowTitle("SongFormer model not found")
-        msg.setText(
-            f"SongFormer model not found at:\n   {_SONGFORMER_DIR}\n\n"
-            "Please reinstall Kling-Match or contact support."
-        )
-        msg.setStandardButtons(
-            QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Ignore
-        )
-        msg.button(QMessageBox.StandardButton.Ignore).setText("Continue anyway")
-        result = msg.exec()
-        if result == QMessageBox.StandardButton.Ok:
-            return 1
+    # סגור splash לפני חלון ההורדה כדי שהחלון יהיה גלוי
+    _close_pyinstaller_splash()
+
+    # בדוק/הורד מודלים לפני פתיחת החלון הראשי
+    if not ensure_models(_SONGFORMER_DIR):
+        # המשתמש ביטל או ההורדה נכשלה
+        return 1
 
     state = AppState()
     window = MainWindow(state=state, songformer_dir=_SONGFORMER_DIR)
@@ -98,9 +89,6 @@ def main() -> int:
     window.raise_()
     window.activateWindow()
     app.processEvents()
-
-    # רק עכשיו סגור את ה-splash — החלון כבר על המסך ו-focus אצלנו
-    _close_pyinstaller_splash()
 
     # Open a file if passed as a command-line argument (e.g. double-click)
     _open_file_from_args(window)

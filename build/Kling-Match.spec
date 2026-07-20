@@ -30,8 +30,7 @@ a = Analysis(
         (os.path.join(root, 'kling_match'),  'app/kling_match'),
         (os.path.join(root, 'SongFormer'),   'app/SongFormer'),
         (os.path.join(root, 'version.txt'),  'app'),
-        # ── ML model weights ─────────────────────────────────────────────
-        (os.path.join(root, 'models'),       'models'),
+        # ── models/ אינו נארז — מורד בהפעלה ראשונה ─────────────────────
         # ── x_clip data (קובץ BPE) ────────────────────────────────────────
         (os.path.join(site_pkg, 'x_clip', 'data'), 'x_clip/data'),
         # ── soundfile DLL ─────────────────────────────────────────────────

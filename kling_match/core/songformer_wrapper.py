@@ -484,22 +484,16 @@ class SongFormerWrapper(QThread):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         _MODELS_CACHE["device"] = device
 
-        # MuQ — load from local models/ directory (offline-first)
-        # In frozen build: models/ is at _MEIPASS/models/MuQ
-        # In dev mode: models/ is at repo_root/models/MuQ
+        # MuQ — load from local models/ directory
         import sys as _sys
         if getattr(_sys, "frozen", False):
             _base = getattr(_sys, "_MEIPASS", "")
             muq_local = os.path.join(_base, "models", "MuQ")
         else:
-            # dev: songformer_dir = repo/SongFormer/src/SongFormer → go 4 levels up
             muq_local = os.path.normpath(
                 os.path.join(self.songformer_dir, "..", "..", "..", "..", "models", "MuQ")
             )
-        if os.path.isdir(muq_local):
-            muq = MuQ.from_pretrained(muq_local)
-        else:
-            muq = MuQ.from_pretrained("OpenMuQ/MuQ-large-msd-iter")
+        muq = MuQ.from_pretrained(muq_local)
         muq = muq.to(device).eval()
         _MODELS_CACHE["muq"] = muq
 
