@@ -21,6 +21,27 @@ def _site_datas(*pkg_names):
             result.append((p, name))
     return result
 
+
+def _songformer_datas(songformer_root, dst_prefix='app/SongFormer'):
+    """
+    אוסף את כל קבצי SongFormer למעט תיקיית ckpts/ (מודלים כבדים).
+    המודלים מורדים בהפעלה ראשונה ולא נארזים ב-EXE.
+    """
+    SKIP_DIRS = {'ckpts'}
+    result = []
+    for dirpath, dirnames, filenames in os.walk(songformer_root):
+        # מנע כניסה לתיקיות שברשימה
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for fname in filenames:
+            src = os.path.join(dirpath, fname)
+            rel = os.path.relpath(dirpath, songformer_root).replace('\\', '/')
+            if rel == '.':
+                dst = dst_prefix
+            else:
+                dst = dst_prefix + '/' + rel
+            result.append((src, dst))
+    return result
+
 a = Analysis(
     [os.path.join(root, 'main.py')],
     pathex=[root],
@@ -28,9 +49,8 @@ a = Analysis(
     datas=[
         # ── App code ─────────────────────────────────────────────────────
         (os.path.join(root, 'kling_match'),  'app/kling_match'),
-        (os.path.join(root, 'SongFormer'),   'app/SongFormer'),
         (os.path.join(root, 'version.txt'),  'app'),
-        # ── models/ אינו נארז — מורד בהפעלה ראשונה ─────────────────────
+        # ── models/ ו-SongFormer/ckpts/ אינם נארזים — מורדים בהפעלה ראשונה
         # ── x_clip data (קובץ BPE) ────────────────────────────────────────
         (os.path.join(site_pkg, 'x_clip', 'data'), 'x_clip/data'),
         # ── soundfile DLL ─────────────────────────────────────────────────
@@ -41,8 +61,7 @@ a = Analysis(
         # ── Splash ────────────────────────────────────────────────────────
         (os.path.join(root, 'build', 'splash.png'),   'build'),
         (os.path.join(root, 'build', 'icon_256.png'), 'build'),
-    ] + _site_datas(
-        # כל החבילות שPyInstaller לא אוסף אוטומטית
+    ] + _songformer_datas(os.path.join(root, 'SongFormer')) + _site_datas(        # כל החבילות שPyInstaller לא אוסף אוטומטית
         'msaf', 'mir_eval', 'jams', 'cvxopt', 'sklearn',
         'vmo', 'networkx', 'x_transformers', 'audioread',
         'pooch', 'platformdirs', 'tqdm', 'packaging',
