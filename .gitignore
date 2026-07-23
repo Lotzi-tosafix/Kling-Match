@@ -70,9 +70,28 @@ SongFormer/src/third_party/
 node_modules/
 
 # ── קבצי פיתוח מקומיים ────────────────────────
+check_deps.py
+check_dll.py
+setup_models.py
 test_torch.py
 הפעל.bat
 tests/
+
+# ── build — קבצים פנימיים/ישנים ───────────────
+build/build.ps1
+build/check_sizes.py
+build/icon_256_original.png
+
+# ── SongFormer — קוד שלא נחוץ לריצה ───────────
+SongFormer/app.py
+SongFormer/figs/
+SongFormer/src/data_pipeline/
+SongFormer/src/SongFormer/train/
+SongFormer/src/SongFormer/evaluation/
+SongFormer/src/SongFormer/utils/
+SongFormer/src/SongFormer/eval.sh
+SongFormer/src/SongFormer/train.sh
+SongFormer/src/SongFormer/infer.sh
 
 # ── models dir (נכלל בsetup/portable, לא בגיט) ─
 models/
