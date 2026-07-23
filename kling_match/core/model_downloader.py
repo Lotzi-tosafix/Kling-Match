@@ -1,14 +1,15 @@
 """
-model_downloader.py — הורדת מודלי ML בהפעלה ראשונה.
+model_downloader.py — הורדת מודלי ML בהפעלה ראשונה / כשמודלים חסרים.
 
 שלושה מודלים נדרשים:
-  1. MuQ          — OpenMuQ/MuQ-large-msd-iter  (HuggingFace Hub)
-  2. MusicFM      — minzwon/MusicFM              (HuggingFace Hub)
-  3. SongFormer   — ASLP-lab/SongFormer          (HuggingFace Hub)
+  1. MuQ        — OpenMuQ/MuQ-large-msd-iter  (HuggingFace)
+  2. MusicFM    — minzwon/MusicFM             (HuggingFace)
+  3. SongFormer — ASLP-lab/SongFormer         (HuggingFace)
 
-ה-downloader בודק אם המודלים קיימים בנתיב הנכון לפני כל הורדה.
-אם כולם קיימים — מחזיר מיד ללא חלון.
-אם חסר לפחות אחד — מציג חלון progress ומוריד.
+בדיקה בכל הפעלה:
+  - אם כולם קיימים ושלמים  → ממשיכים מיד (בדיקה מיידית, פחות ממילישנייה)
+  - אם חסרים / חלקיים (.part) → שואלים את המשתמש אם להוריד
+  - קבצי .part מזוהים כהורדה שנקטעה → הודעה שונה למשתמש
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
     QLabel,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QVBoxLayout,
@@ -33,95 +35,95 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QFont
 
 
-# ── נתיבי יעד ─────────────────────────────────────────────────────────────────
+# ── נתיבי יעד ────────────────────────────────────────────────────────────────
 
 def _models_root() -> str:
-    """
-    מחזיר את תיקיית models/ בהתאם למצב ריצה.
-    frozen: ליד ה-EXE  (dist/Kling-Match/models/)
-    dev:    שורש המאגר (repo/models/)
-    """
     if getattr(sys, "frozen", False):
         return os.path.join(os.path.dirname(sys.executable), "models")
-    # dev: שני רמות מעל kling_match/core/
     return os.path.normpath(
         os.path.join(os.path.dirname(__file__), "..", "..", "models")
     )
 
 
-def _ckpts_root(songformer_dir: str) -> str:
-    """מחזיר את נתיב ckpts/ של SongFormer."""
-    if getattr(sys, "frozen", False):
-        # frozen: _MEIPASS/app/SongFormer/src/SongFormer/ckpts
-        base = getattr(sys, "_MEIPASS", "")
-        return os.path.join(base, "app", "SongFormer", "src", "SongFormer", "ckpts")
-    return os.path.join(songformer_dir, "ckpts")
-
-
-def _model_files(songformer_dir: str) -> list[dict]:
-    """
-    מחזיר רשימת מילונים עם פרטי כל קובץ מודל.
-    כל מילון: name, url, dest_path, size_mb (הערכה).
-    """
+def _model_files() -> list[dict]:
     mr = _models_root()
-    cr = _ckpts_root(songformer_dir)
-
     HF = "https://huggingface.co"
     return [
         {
             "name": "MuQ (model.safetensors)",
-            "url": f"{HF}/OpenMuQ/MuQ-large-msd-iter/resolve/main/model.safetensors",
+            "url":  f"{HF}/OpenMuQ/MuQ-large-msd-iter/resolve/main/model.safetensors",
             "dest": os.path.join(mr, "MuQ", "model.safetensors"),
             "size_mb": 1272,
         },
         {
             "name": "MuQ (config.json)",
-            "url": f"{HF}/OpenMuQ/MuQ-large-msd-iter/resolve/main/config.json",
+            "url":  f"{HF}/OpenMuQ/MuQ-large-msd-iter/resolve/main/config.json",
             "dest": os.path.join(mr, "MuQ", "config.json"),
             "size_mb": 1,
         },
         {
             "name": "MusicFM (pretrained_msd.pt)",
-            "url": f"{HF}/minzwon/MusicFM/resolve/main/pretrained_msd.pt",
-            "dest": os.path.join(cr, "MusicFM", "pretrained_msd.pt"),
+            "url":  f"{HF}/minzwon/MusicFM/resolve/main/pretrained_msd.pt",
+            "dest": os.path.join(mr, "MusicFM", "pretrained_msd.pt"),
             "size_mb": 1256,
         },
         {
             "name": "MusicFM (msd_stats.json)",
-            "url": f"{HF}/minzwon/MusicFM/resolve/main/msd_stats.json",
-            "dest": os.path.join(cr, "MusicFM", "msd_stats.json"),
+            "url":  f"{HF}/minzwon/MusicFM/resolve/main/msd_stats.json",
+            "dest": os.path.join(mr, "MusicFM", "msd_stats.json"),
             "size_mb": 1,
         },
         {
             "name": "SongFormer (SongFormer.safetensors)",
-            "url": f"{HF}/ASLP-lab/SongFormer/resolve/main/SongFormer.safetensors",
-            "dest": os.path.join(cr, "SongFormer.safetensors"),
+            "url":  f"{HF}/ASLP-lab/SongFormer/resolve/main/SongFormer.safetensors",
+            "dest": os.path.join(mr, "SongFormer", "SongFormer.safetensors"),
             "size_mb": 100,
         },
     ]
 
 
-def models_exist(songformer_dir: str) -> bool:
-    """בודק אם כל קבצי המודלים קיימים ואינם ריקים."""
-    for f in _model_files(songformer_dir):
-        if not os.path.isfile(f["dest"]) or os.path.getsize(f["dest"]) < 1024:
-            return False
-    return True
+# ── סטטוס המודלים ─────────────────────────────────────────────────────────────
+
+def _file_ok(path: str) -> bool:
+    """קובץ קיים ושלם (לא .part)."""
+    return os.path.isfile(path) and os.path.getsize(path) > 1024
 
 
-# ── Worker thread ──────────────────────────────────────────────────────────────
+def _has_partial() -> bool:
+    """בודק אם קיים לפחות קובץ .part (הורדה שנקטעה)."""
+    for f in _model_files():
+        if os.path.isfile(f["dest"] + ".part"):
+            return True
+    return False
+
+
+def models_status() -> str:
+    """
+    מחזיר:
+      'ok'      — כולם קיימים ושלמים
+      'partial' — לפחות אחד נקטע באמצע (.part קיים)
+      'missing' — לפחות אחד חסר לחלוטין
+    """
+    files = _model_files()
+    all_ok = all(_file_ok(f["dest"]) for f in files)
+    if all_ok:
+        return "ok"
+    if _has_partial():
+        return "partial"
+    return "missing"
+
+
+# ── Worker thread ─────────────────────────────────────────────────────────────
 
 class _DownloadWorker(QThread):
-    """מוריד את כל קבצי המודלים ברצף ומדווח על התקדמות."""
-
-    # signals
-    file_started  = Signal(str, int)   # (שם קובץ, גודל_MB)
-    file_progress = Signal(int)        # אחוז 0-100 של הקובץ הנוכחי
-    file_done     = Signal(str)        # שם קובץ שהסתיים
+    file_started  = Signal(str, int)   # (שם, size_mb)
+    file_progress = Signal(int)        # 0-100 לקובץ הנוכחי
+    overall_progress = Signal(int, int)  # (קבצים שהסתיימו, סה"כ קבצים)
+    file_done     = Signal(str)
     all_done      = Signal()
-    failed        = Signal(str)        # הודעת שגיאה
+    failed        = Signal(str)
 
-    def __init__(self, files: list[dict], parent: Optional[QWidget] = None) -> None:
+    def __init__(self, files: list[dict], parent=None) -> None:
         super().__init__(parent)
         self._files = files
         self._cancelled = False
@@ -130,25 +132,24 @@ class _DownloadWorker(QThread):
         self._cancelled = True
 
     def run(self) -> None:
+        total = len(self._files)
+        done  = 0
+
         for f in self._files:
             if self._cancelled:
                 return
 
-            # כבר קיים ותקין — דלג
-            if os.path.isfile(f["dest"]) and os.path.getsize(f["dest"]) > 1024:
-                self.file_started.emit(f["name"], f["size_mb"])
-                self.file_progress.emit(100)
-                self.file_done.emit(f["name"])
+            # קובץ שלם — דלג
+            if _file_ok(f["dest"]):
+                done += 1
+                self.overall_progress.emit(done, total)
                 continue
 
             self.file_started.emit(f["name"], f["size_mb"])
 
-            # ודא שהתיקייה קיימת
             os.makedirs(os.path.dirname(f["dest"]), exist_ok=True)
-
-            # הורדה עם resuming (Range header)
-            tmp_path = f["dest"] + ".part"
-            downloaded = os.path.getsize(tmp_path) if os.path.isfile(tmp_path) else 0
+            tmp  = f["dest"] + ".part"
+            downloaded = os.path.getsize(tmp) if os.path.isfile(tmp) else 0
 
             try:
                 req = urllib.request.Request(
@@ -159,29 +160,30 @@ class _DownloadWorker(QThread):
                     }
                 )
                 with urllib.request.urlopen(req, timeout=60) as resp:
-                    total = int(resp.headers.get("Content-Length", 0)) + downloaded
+                    total_bytes = int(resp.headers.get("Content-Length", 0)) + downloaded
                     mode = "ab" if downloaded > 0 else "wb"
-                    with open(tmp_path, mode) as fp:
-                        chunk_size = 131072  # 128 KB
+                    with open(tmp, mode) as fp:
                         while not self._cancelled:
-                            chunk = resp.read(chunk_size)
+                            chunk = resp.read(131072)
                             if not chunk:
                                 break
                             fp.write(chunk)
                             downloaded += len(chunk)
-                            if total > 0:
+                            if total_bytes > 0:
                                 self.file_progress.emit(
-                                    int(downloaded / total * 100)
+                                    int(downloaded / total_bytes * 100)
                                 )
 
                 if self._cancelled:
                     return
 
-                # rename tmp → final
                 if os.path.isfile(f["dest"]):
                     os.remove(f["dest"])
-                os.rename(tmp_path, f["dest"])
+                os.rename(tmp, f["dest"])
+
+                done += 1
                 self.file_done.emit(f["name"])
+                self.overall_progress.emit(done, total)
 
             except Exception as exc:
                 self.failed.emit(
@@ -194,29 +196,24 @@ class _DownloadWorker(QThread):
             self.all_done.emit()
 
 
-# ── Dialog ─────────────────────────────────────────────────────────────────────
+# ── Dialog ────────────────────────────────────────────────────────────────────
 
 class ModelDownloadDialog(QDialog):
-    """
-    חלון הורדת מודלים.
-    מוצג רק אם לפחות מודל אחד חסר.
-    חוסם את המשך ההפעלה עד שההורדה מסתיימת.
-    """
 
-    def __init__(self, files: list[dict], parent: Optional[QWidget] = None) -> None:
+    def __init__(self, files: list[dict], parent=None) -> None:
         super().__init__(parent)
-        self._files  = files
+        self._files   = files
         self._worker: Optional[_DownloadWorker] = None
         self._success = False
 
         self.setWindowTitle("Kling-Match — הורדת מודלים")
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(520)
+        # לא מגדירים RTL על כל ה-dialog — גורם לבעיות בטקסט מעורב עברית/אנגלית
         self.setWindowFlags(
-            Qt.WindowType.Dialog | Qt.WindowType.WindowTitleHint
+            Qt.WindowType.Dialog |
+            Qt.WindowType.WindowTitleHint
         )
-        # לא ניתן לסגור ידנית
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
-
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -224,54 +221,70 @@ class ModelDownloadDialog(QDialog):
         layout.setSpacing(14)
         layout.setContentsMargins(24, 24, 24, 20)
 
-        # כותרת
-        title = QLabel("הורדת מודלי ניתוח מוזיקה")
+        # כותרת — עברית בלבד, RTL
+        title = QLabel("הורדת מודלי AI")
         f = QFont()
         f.setPointSize(13)
         f.setBold(True)
         title.setFont(f)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         layout.addWidget(title)
 
-        # הסבר
-        total_mb = sum(f["size_mb"] for f in self._files
-                       if not (os.path.isfile(f["dest"])
-                               and os.path.getsize(f["dest"]) > 1024))
+        # תיאור — כל שורה עברית בלבד, ללא מילים אנגליות באמצע
+        total_mb = sum(
+            f["size_mb"] for f in self._files
+            if not _file_ok(f["dest"])
+        )
         total_gb = round(total_mb / 1024, 1)
         desc = QLabel(
-            f"Kling-Match דורש מודלי AI לניתוח שירים.\n"
-            f"הם יורדו פעם אחת בלבד מ-HuggingFace ({total_gb} GB).\n"
-            f"ההורדה ניתנת להמשך אם נקטעת."
+            f"כדי לנתח שירים, יש להוריד מודלי AI בגודל {total_gb} GB.\n"
+            f"ההורדה מתבצעת פעם אחת בלבד מ-HuggingFace.\n"
+            f"אם הורדה קודמת נקטעה — היא תמשיך מהנקודה שבה עצרה."
         )
         desc.setWordWrap(True)
         desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        desc.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         layout.addWidget(desc)
 
-        # שם הקובץ הנוכחי
+        # שם קובץ נוכחי — LTR כי הוא שם קובץ אנגלי
         self._file_label = QLabel("מתחיל...")
-        self._file_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self._file_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._file_label.setStyleSheet("font-size: 9pt; color: #aaa;")
         layout.addWidget(self._file_label)
 
-        # progress bar קובץ נוכחי
+        # progress קובץ נוכחי — RTL
         self._file_bar = QProgressBar()
         self._file_bar.setRange(0, 100)
         self._file_bar.setValue(0)
         self._file_bar.setTextVisible(True)
+        self._file_bar.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         layout.addWidget(self._file_bar)
 
-        # progress bar כולל
-        overall_label = QLabel("התקדמות כוללת")
-        overall_label.setStyleSheet("font-size: 9pt; color: #888;")
-        layout.addWidget(overall_label)
+        # תווית "התקדמות כוללת" — RTL כי עברית
+        total_label = QLabel("התקדמות כוללת")
+        total_label.setStyleSheet("font-size: 9pt; color: #888;")
+        total_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        total_label.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+        layout.addWidget(total_label)
 
+        # חישוב סה"כ MB להורדה
+        self._total_mb_to_download = sum(
+            f["size_mb"] for f in self._files
+            if not _file_ok(f["dest"])
+        )
+        self._downloaded_mb = 0.0
+        self._current_file_start_mb = 0.0
+
+        # progress כולל — RTL
         self._total_bar = QProgressBar()
-        self._total_bar.setRange(0, len(self._files))
+        self._total_bar.setRange(0, max(self._total_mb_to_download, 1))
         self._total_bar.setValue(0)
         self._total_bar.setTextVisible(False)
+        self._total_bar.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         layout.addWidget(self._total_bar)
 
-        self._done_count = 0
+        self._current_file_size_mb = 0
 
         # כפתור ביטול
         btn_row = QHBoxLayout()
@@ -286,10 +299,10 @@ class ModelDownloadDialog(QDialog):
         layout.addLayout(btn_row)
 
     def start_downloads(self) -> None:
-        """מפעיל את ה-worker thread."""
         self._worker = _DownloadWorker(self._files, self)
         self._worker.file_started.connect(self._on_file_started)
-        self._worker.file_progress.connect(self._file_bar.setValue)
+        self._worker.file_progress.connect(self._on_file_progress)
+        self._worker.overall_progress.connect(self._on_overall_progress)
         self._worker.file_done.connect(self._on_file_done)
         self._worker.all_done.connect(self._on_all_done)
         self._worker.failed.connect(self._on_failed)
@@ -298,18 +311,43 @@ class ModelDownloadDialog(QDialog):
     def _on_file_started(self, name: str, size_mb: int) -> None:
         self._file_label.setText(f"{name}  ({size_mb} MB)")
         self._file_bar.setValue(0)
+        self._current_file_size_mb = size_mb
+        self._current_file_start_mb = self._downloaded_mb
+
+    def _on_file_progress(self, pct: int) -> None:
+        self._file_bar.setValue(pct)
+        # עדכן progress כולל לפי MB שהורדנו
+        mb_in_current = self._current_file_size_mb * pct / 100.0
+        total_done_mb = int(self._current_file_start_mb + mb_in_current)
+        self._total_bar.setValue(min(total_done_mb, self._total_mb_to_download))
+
+    def _on_overall_progress(self, done: int, total: int) -> None:
+        # עדכן גם את ה-downloaded_mb לאחר סיום קובץ
+        completed_mb = sum(
+            f["size_mb"] for f in self._files[:done]
+            if not _file_ok(self._files[done - 1]["dest"])
+               or True  # תמיד תחשב
+        )
+        self._downloaded_mb = sum(
+            f["size_mb"] for i, f in enumerate(self._files)
+            if i < done and not _file_ok(f["dest"])
+               or (i < done and _file_ok(f["dest"]))
+        )
 
     def _on_file_done(self, name: str) -> None:
-        self._done_count += 1
-        self._total_bar.setValue(self._done_count)
         self._file_bar.setValue(100)
+        # עדכן את ה-mb שהורדנו
+        for f in self._files:
+            if f["name"] == name:
+                self._downloaded_mb += f["size_mb"]
+                break
 
     def _on_all_done(self) -> None:
+        self._total_bar.setValue(self._total_mb_to_download)
         self._success = True
         self.accept()
 
     def _on_failed(self, msg: str) -> None:
-        from PyQt6.QtWidgets import QMessageBox
         self._cancel_btn.setText("סגור")
         QMessageBox.critical(self, "שגיאת הורדה", msg)
         self.reject()
@@ -324,27 +362,52 @@ class ModelDownloadDialog(QDialog):
         return self._success
 
 
-# ── Public entry point ─────────────────────────────────────────────────────────
+# ── Public entry point ────────────────────────────────────────────────────────
 
-def ensure_models(songformer_dir: str, parent: Optional[QWidget] = None) -> bool:
+def ensure_models(parent=None) -> bool:
     """
-    בודק אם המודלים קיימים. אם לא — מציג חלון הורדה.
+    בודק בכל הפעלה אם המודלים קיימים.
 
     Returns:
-        True אם כל המודלים קיימים (בין אם היו קיימים מראש או הורדו עכשיו).
-        False אם המשתמש ביטל או ההורדה נכשלה.
+        True  — כל המודלים קיימים (בין אם היו או הורדו עכשיו)
+        False — המשתמש ביטל או ההורדה נכשלה
     """
-    files = _model_files(songformer_dir)
+    status = models_status()
 
-    # בדוק אילו קבצים חסרים
-    missing = [
-        f for f in files
-        if not os.path.isfile(f["dest"]) or os.path.getsize(f["dest"]) < 1024
-    ]
+    if status == "ok":
+        return True  # הכל תקין — ממשיכים מיד
 
-    if not missing:
-        return True  # הכל קיים — אין מה לעשות
+    files = _model_files()
 
+    # בניית הודעה מתאימה לפי המצב
+    if status == "partial":
+        title = "הורדה לא הושלמה"
+        text  = (
+            "הורדת מודלי ה-AI נקטעה בהפעלה קודמת.\n\n"
+            "ללא המודלים לא ניתן לנתח שירים.\n"
+            "להמשיך את ההורדה?"
+        )
+    else:  # missing
+        title = "נדרשים מודלי AI"
+        text  = (
+            "כדי לנתח שירים, Kling-Match צריך להוריד מודלי AI.\n\n"
+            "מדובר בהורדה חד-פעמית של כ-2.6 GB מ-HuggingFace.\n"
+            "להוריד עכשיו?"
+        )
+
+    msg = QMessageBox(parent)
+    msg.setWindowTitle(title)
+    msg.setText(text)
+    msg.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+    msg.setIcon(QMessageBox.Icon.Question)
+    download_btn = msg.addButton("הורד", QMessageBox.ButtonRole.AcceptRole)
+    msg.addButton("יציאה", QMessageBox.ButtonRole.RejectRole)
+    msg.exec()
+
+    if msg.clickedButton() != download_btn:
+        return False
+
+    # פתח חלון הורדה
     dlg = ModelDownloadDialog(files, parent=parent)
     dlg.start_downloads()
     dlg.exec()

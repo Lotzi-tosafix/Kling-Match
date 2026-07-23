@@ -761,6 +761,13 @@ class MainWindow(QMainWindow):
         copy_btn = box.addButton("העתק שגיאה", QMessageBox.ButtonRole.ActionRole)
         box.exec()
         if box.clickedButton() == copy_btn:
-            QApplication.clipboard().setText(f"{title}\n\n{message}")
+            # מעתיק את הודעת השגיאה בלבד — ללא כותרת וללא שאלות נוספות
+            # מוציא שורות שמתחילות ב"האם" (שאלות כמו "האם לנסות שוב?")
+            clean_lines = [
+                ln for ln in message.splitlines()
+                if not ln.strip().startswith("האם")
+            ]
+            clean_msg = "\n".join(clean_lines).strip()
+            QApplication.clipboard().setText(clean_msg)
             return QMessageBox.StandardButton.Ok
         return box.standardButton(box.clickedButton())

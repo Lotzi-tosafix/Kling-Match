@@ -32,7 +32,6 @@ _MODELS_CACHE: dict = {
 }
 
 # קבועים מ-SongFormer
-_MUSICFM_HOME_PATH = os.path.join("ckpts", "MusicFM")
 _AFTER_DOWNSAMPLING_FRAME_RATES: float = 8.333
 _DATASET_LABEL: str = "SongForm-HX-8Class"
 _DATASET_IDS: List[int] = [5]
@@ -189,8 +188,10 @@ class SongFormerWrapper(QThread):
                 )
             except ImportError as exc:
                 self.error.emit(
-                    f"לא ניתן לייבא את SongFormer. ודא שהמודל מותקן בנתיב: "
-                    f"{self.songformer_dir}\nפרטי שגיאה: {exc}"
+                    f"לא ניתן לייבא את SongFormer.\n"
+                    f"ייתכן שמודלי ה-AI לא הורדו.\n"
+                    f"הפעל מחדש את Kling-Match כדי להוריד אותם.\n\n"
+                    f"פרטי שגיאה: {exc}"
                 )
                 return
 
@@ -485,23 +486,40 @@ class SongFormerWrapper(QThread):
         _MODELS_CACHE["device"] = device
 
         # MuQ — load from local models/ directory
+        # חשוב: להעביר Path object ולא str — @validate_hf_hub_args של HF
+        # מאמת str כ-repo ID אבל מקבל Path כנתיב מקומי ללא ולידציה
         import sys as _sys
+        from pathlib import Path as _Path
+
         if getattr(_sys, "frozen", False):
-            _base = getattr(_sys, "_MEIPASS", "")
-            muq_local = os.path.join(_base, "models", "MuQ")
-        else:
-            muq_local = os.path.normpath(
-                os.path.join(self.songformer_dir, "..", "..", "..", "..", "models", "MuQ")
+            # frozen: models/ נמצא ליד ה-EXE (לא ב-_internal)
+            muq_local    = _Path(os.path.dirname(_sys.executable)) / "models" / "MuQ"
+            musicfm_dir  = _Path(os.path.dirname(_sys.executable)) / "models" / "MusicFM"
+            songformer_ckpt = (
+                _Path(os.path.dirname(_sys.executable))
+                / "models" / "SongFormer" / "SongFormer.safetensors"
             )
-        muq = MuQ.from_pretrained(muq_local)
+        else:
+            _repo_root   = _Path(self.songformer_dir).resolve().parents[3]
+            muq_local    = _repo_root / "models" / "MuQ"
+            musicfm_dir  = _repo_root / "models" / "MusicFM"
+            songformer_ckpt = _repo_root / "models" / "SongFormer" / "SongFormer.safetensors"
+
+        if not muq_local.is_dir():
+            raise FileNotFoundError(
+                f"תיקיית מודל MuQ לא נמצאה: {muq_local}\n"
+                "הפעל מחדש את Kling-Match להורדת המודלים."
+            )
+
+        muq = MuQ.from_pretrained(muq_local, local_files_only=True)
         muq = muq.to(device).eval()
         _MODELS_CACHE["muq"] = muq
 
         # MusicFM
         musicfm = MusicFM25Hz(
             is_flash=False,
-            stat_path=os.path.join(_MUSICFM_HOME_PATH, "msd_stats.json"),
-            model_path=os.path.join(_MUSICFM_HOME_PATH, "pretrained_msd.pt"),
+            stat_path=str(musicfm_dir / "msd_stats.json"),
+            model_path=str(musicfm_dir / "pretrained_msd.pt"),
         )
         musicfm = musicfm.to(device).eval()
         _MODELS_CACHE["musicfm"] = musicfm
@@ -512,7 +530,7 @@ class SongFormerWrapper(QThread):
         hp = OmegaConf.load(os.path.join("configs", _CONFIG_PATH))
         msa_model = Model(hp)
 
-        ckpt_path = os.path.join("ckpts", _CHECKPOINT)
+        ckpt_path = str(songformer_ckpt)
         if ckpt_path.endswith(".pt"):
             ckpt = torch.load(ckpt_path, map_location=device)
         elif ckpt_path.endswith(".safetensors"):

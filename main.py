@@ -73,22 +73,24 @@ def main() -> int:
 
     apply_styles(app)
 
-    # סגור splash לפני חלון ההורדה כדי שהחלון יהיה גלוי
-    _close_pyinstaller_splash()
-
-    # בדוק/הורד מודלים לפני פתיחת החלון הראשי
-    if not ensure_models(_SONGFORMER_DIR):
-        # המשתמש ביטל או ההורדה נכשלה
-        return 1
-
     state = AppState()
     window = MainWindow(state=state, songformer_dir=_SONGFORMER_DIR)
 
-    # הצג את החלון הראשי ועבד אירועים כדי ש-Windows יגדיר אותו כחלון פעיל
+    # הצג את החלון הראשי תחילה
     window.show()
+    app.processEvents()
+
+    # סגור את ה-splash לאחר שהחלון הראשי גלוי,
+    # ומיד בקש פוקוס לפני ש-Windows יחליט להעביר אותו לחלון אחר
+    _close_pyinstaller_splash()
     window.raise_()
     window.activateWindow()
     app.processEvents()
+
+    # בדוק/הורד מודלים — רק לאחר שהחלון הראשי גלוי, כך הדיאלוג מופיע מעליו
+    if not ensure_models(parent=window):
+        # המשתמש ביטל או ההורדה נכשלה
+        return 1
 
     # Open a file if passed as a command-line argument (e.g. double-click)
     _open_file_from_args(window)

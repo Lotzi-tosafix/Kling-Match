@@ -52,7 +52,8 @@ Source: "install_type_installer.txt"; DestName: "install_type.txt"; DestDir: "{a
 [Icons]
 Name: "{group}\{#AppName}";             Filename: "{app}\{#AppExeName}"
 Name: "{group}\Uninstall {#AppName}";   Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#AppName}";     Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
+Name: "{commondesktop}\{#AppName}";     Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Check: IsAdminInstallMode
+Name: "{userdesktop}\{#AppName}";       Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; Check: not IsAdminInstallMode
 
 ; ────────────────────────────────────────────────────────────────────
 ; .klng file association
