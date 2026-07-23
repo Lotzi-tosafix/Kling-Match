@@ -268,11 +268,12 @@ class ModelDownloadDialog(QDialog):
         total_label.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         layout.addWidget(total_label)
 
-        # חישוב סה"כ MB להורדה
+        # חישוב סה"כ MB להורדה (רק קבצים חסרים)
         self._total_mb_to_download = sum(
             f["size_mb"] for f in self._files
             if not _file_ok(f["dest"])
         )
+        # התחל מ-0 — נצבור MB לפי התקדמות בפועל
         self._downloaded_mb = 0.0
         self._current_file_start_mb = 0.0
 
@@ -316,30 +317,21 @@ class ModelDownloadDialog(QDialog):
 
     def _on_file_progress(self, pct: int) -> None:
         self._file_bar.setValue(pct)
-        # עדכן progress כולל לפי MB שהורדנו
         mb_in_current = self._current_file_size_mb * pct / 100.0
         total_done_mb = int(self._current_file_start_mb + mb_in_current)
         self._total_bar.setValue(min(total_done_mb, self._total_mb_to_download))
 
     def _on_overall_progress(self, done: int, total: int) -> None:
-        # עדכן גם את ה-downloaded_mb לאחר סיום קובץ
-        completed_mb = sum(
-            f["size_mb"] for f in self._files[:done]
-            if not _file_ok(self._files[done - 1]["dest"])
-               or True  # תמיד תחשב
-        )
-        self._downloaded_mb = sum(
-            f["size_mb"] for i, f in enumerate(self._files)
-            if i < done and not _file_ok(f["dest"])
-               or (i < done and _file_ok(f["dest"]))
-        )
+        pass  # מטופל דרך _on_file_done ו-_on_file_progress
 
     def _on_file_done(self, name: str) -> None:
         self._file_bar.setValue(100)
-        # עדכן את ה-mb שהורדנו
         for f in self._files:
             if f["name"] == name:
                 self._downloaded_mb += f["size_mb"]
+                self._total_bar.setValue(
+                    min(int(self._downloaded_mb), self._total_mb_to_download)
+                )
                 break
 
     def _on_all_done(self) -> None:
