@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 
 import qtawesome as qta
-from PyQt6.QtCore import Qt, pyqtSignal as Signal, QUrl
+from PyQt6.QtCore import Qt, pyqtSignal as Signal, QUrl, QSize
 from PyQt6.QtGui import QCursor, QDesktopServices
 from PyQt6.QtWidgets import (
     QButtonGroup,
@@ -193,37 +193,35 @@ class SettingsDialog(QDialog):
 
         about_card, ab_lay = self._card()
 
-        app_ico = QLabel()
-        app_ico.setPixmap(
-            qta.icon("fa5s.tag", color=_styles.COLOR_MUTED).pixmap(14, 14)
-        )
-        app_ico.setStyleSheet("background: transparent; border: none;")
-        ab_lay.addWidget(app_ico, 0, Qt.AlignmentFlag.AlignVCenter)
-
         about_text_lay = QHBoxLayout()
-        about_text_lay.setSpacing(12)
+        about_text_lay.setSpacing(14)
         about_text_lay.setContentsMargins(0, 0, 0, 0)
 
-        app_name_lbl = QLabel(f"Kling-Match  v{__version__}")
+        app_name_lbl = QLabel(f"Kling-Match  <span style='color:{_styles.COLOR_MUTED}; font-weight:400;'>v{__version__}</span>")
         app_name_lbl.setStyleSheet(
-            f"color: {_styles.COLOR_ON_SURFACE}; font-size: 10pt; font-weight: 600;"
-            f" background: transparent; border: none;"
+            f"color: {_styles.COLOR_ON_SURFACE}; font-size: 11pt; font-weight: 700;"
+            f" background: transparent; border: none; font-family: 'Segoe UI';"
         )
-        about_text_lay.addWidget(app_name_lbl)
+        about_text_lay.addWidget(app_name_lbl, 1)
 
-        github_btn = QPushButton("← GitHub")
+        github_btn = QPushButton()
         github_btn.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
         github_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        github_btn.setIcon(qta.icon("fa5b.github", color=_styles.COLOR_SECONDARY))
+        github_btn.setText("  GitHub")
+        github_btn.setIconSize(QSize(16, 16))
         github_btn.setStyleSheet(
-            f"QPushButton {{ background: transparent; border: none; padding: 0;"
-            f" color: {_styles.COLOR_SECONDARY}; font-size: 10pt;"
-            f" text-decoration: underline; }}"
-            f"QPushButton:hover {{ color: {_styles.COLOR_PRIMARY}; }}"
+            f"QPushButton {{ background: {_styles.COLOR_SURFACE2}; border: 1px solid {_styles.COLOR_OUTLINE_BRIGHT};"
+            f" border-radius: 12px; padding: 4px 12px 4px 10px;"
+            f" color: {_styles.COLOR_SECONDARY}; font-size: 9pt; font-weight: 600; }}"
+            f"QPushButton:hover {{ background: {_styles.COLOR_SURFACE3};"
+            f" border-color: {_styles.COLOR_SECONDARY}; color: {_styles.COLOR_SECONDARY}; }}"
+            f"QPushButton:pressed {{ background: {_styles.COLOR_SURFACE4}; }}"
         )
         github_btn.clicked.connect(
             lambda: QDesktopServices.openUrl(QUrl(_GITHUB_URL))
         )
-        about_text_lay.addWidget(github_btn)
+        about_text_lay.addWidget(github_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
         ab_lay.addLayout(about_text_lay, 1)
         body_lay.addWidget(about_card)
