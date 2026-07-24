@@ -1,0 +1,121 @@
+name: Release Build
+
+# ── triggers ────────────────────────────────────────────────────────────────
+on:
+  push:
+    paths:
+      - "version.txt"   # push שמשנה את הגרסה מפעיל בנייה אוטומטית
+  workflow_dispatch:    # לחיצה ידנית מ-GitHub Actions UI
+
+# ── permissions ─────────────────────────────────────────────────────────────
+permissions:
+  contents: write       # נדרש כדי ליצור GitHub Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive   # כולל SongFormer submodule
+
+      # ── 2. Read version ─────────────────────────────────────────────────────
+      - name: Read version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Get-Content version.txt -Raw).Trim()
+          echo "VERSION=$v" >> $env:GITHUB_OUTPUT
+          echo "TAG=v$v"    >> $env:GITHUB_OUTPUT
+
+      # ── 3. Python setup ─────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+          # תלויות נוספות שנדרשות לבנייה (מה שב-spec)
+          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install librosa pydub sounddevice soundfile
+          pip install transformers safetensors accelerate huggingface_hub
+          pip install einops ema-pytorch x-clip x-transformers
+          pip install omegaconf ftfy msaf mir_eval jams cvxopt
+          pip install scikit-learn networkx pooch qtawesome
+
+      # ── 4. Download ffmpeg ───────────────────────────────────────────────────
+      - name: Download ffmpeg
+        shell: pwsh
+        run: |
+          $url = "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-full_build.zip"
+          Invoke-WebRequest -Uri $url -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg_tmp
+          $bin = Get-ChildItem -Recurse -Filter "ffmpeg.exe" ffmpeg_tmp | Select-Object -First 1
+          echo "FFMPEG_EXE=$($bin.FullName)"   >> $env:GITHUB_ENV
+          $probe = Get-ChildItem -Recurse -Filter "ffprobe.exe" ffmpeg_tmp | Select-Object -First 1
+          echo "FFPROBE_EXE=$($probe.FullName)" >> $env:GITHUB_ENV
+
+      # ── 5. PyInstaller build ────────────────────────────────────────────────
+      - name: Build with PyInstaller
+        shell: pwsh
+        run: |
+          pyinstaller build\Kling-Match.spec --noconfirm
+
+      # ── 6. Remove models from dist (they download at runtime) ───────────────
+      - name: Remove models from dist
+        shell: pwsh
+        run: |
+          if (Test-Path "dist\Kling-Match\models") {
+            Remove-Item -Recurse -Force "dist\Kling-Match\models"
+          }
+
+      # ── 7. Build update.zip ─────────────────────────────────────────────────
+      - name: Build update.zip
+        shell: pwsh
+        run: |
+          python build\make_update_zip.py
+          $v = "${{ steps.ver.outputs.VERSION }}"
+          Move-Item "dist\update.zip" "dist\Kling-Match-$v-update.zip"
+
+      # ── 8. Build installer (Inno Setup) ────────────────────────────────────
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "build\Kling-Match.iss"
+
+      # ── 9. Build portable ZIP ───────────────────────────────────────────────
+      - name: Build portable ZIP
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.VERSION }}"
+          Copy-Item "build\install_type_portable.txt" "dist\Kling-Match\install_type.txt" -Force
+          Compress-Archive -Path "dist\Kling-Match\*" -DestinationPath "dist\Kling-Match-$v-portable.zip"
+
+      # ── 10. Create GitHub Release (draft) ──────────────────────────────────
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $v   = "${{ steps.ver.outputs.VERSION }}"
+          $tag = "${{ steps.ver.outputs.TAG }}"
+          gh release create "$tag" `
+            "dist\installer\Kling-Match-$v-setup.exe#Kling-Match-$v-setup.exe" `
+            "dist\Kling-Match-$v-portable.zip#Kling-Match-$v-portable.zip" `
+            "dist\Kling-Match-$v-update.zip#update.zip" `
+            --title "Kling-Match $v" `
+            --notes "Release $v" `
+            --draft

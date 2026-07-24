@@ -56,8 +56,8 @@ a = Analysis(
         # ── soundfile DLL ─────────────────────────────────────────────────
         (os.path.join(site_pkg, '_soundfile_data'), '_soundfile_data'),
         # ── ffmpeg ────────────────────────────────────────────────────────
-        (r'C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe',  '.'),
-        (r'C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffprobe.exe', '.'),
+        (os.environ.get('FFMPEG_EXE',  r'C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe'),  '.'),
+        (os.environ.get('FFPROBE_EXE', r'C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffprobe.exe'), '.'),
         # ── Splash ────────────────────────────────────────────────────────
         (os.path.join(root, 'build', 'splash.png'),   'build'),
         (os.path.join(root, 'build', 'icon_256.png'), 'build'),

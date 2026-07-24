@@ -6,8 +6,10 @@ import zipfile
 import os
 import sys
 
-app_dir   = r"C:\Users\user\kling-Match\dist\Kling-Match\_internal\app"
-out_zip   = r"C:\Users\user\kling-Match\dist\update.zip"
+# תמיכה בהרצה מכל מיקום — הנתיב יחושב יחסית לשורש הריפו
+_repo_root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+app_dir   = os.path.join(_repo_root, "dist", "Kling-Match", "_internal", "app")
+out_zip   = os.path.join(_repo_root, "dist", "update.zip")
 
 if not os.path.isdir(app_dir):
     print(f"ERROR: תיקייה לא קיימת: {app_dir}")
