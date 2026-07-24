@@ -6,6 +6,10 @@ import zipfile
 import os
 import sys
 
+# Windows CI environments may default to cp1252 — force UTF-8 output
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 # תמיכה בהרצה מכל מיקום — הנתיב יחושב יחסית לשורש הריפו
 _repo_root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 app_dir   = os.path.join(_repo_root, "dist", "Kling-Match", "_internal", "app")

@@ -82,6 +82,8 @@ jobs:
       # ── 7. Build update.zip ─────────────────────────────────────────────────
       - name: Build update.zip
         shell: pwsh
+        env:
+          PYTHONUTF8: "1"
         run: |
           python build\make_update_zip.py
           $v = "${{ steps.ver.outputs.VERSION }}"
