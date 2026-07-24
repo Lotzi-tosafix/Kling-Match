@@ -2,7 +2,7 @@
 ; Build: run build\build.ps1  (or manually: ISCC.exe build\Kling-Match.iss)
 
 #define AppName      "Kling-Match"
-#define AppVersion   "0.9"
+#define AppVersion   Trim(FileRead(FileOpen("..\version.txt")))
 #define AppPublisher "Lotzi-tosafix"
 #define AppURL       "https://github.com/Lotzi-tosafix/Kling-Match"
 #define AppExeName   "Kling-Match.exe"

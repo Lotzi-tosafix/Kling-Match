@@ -34,6 +34,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont
 
+from kling_match import __version__
+
 
 # ── נתיבי יעד ────────────────────────────────────────────────────────────────
 
@@ -155,7 +157,7 @@ class _DownloadWorker(QThread):
                 req = urllib.request.Request(
                     f["url"],
                     headers={
-                        "User-Agent": "Kling-Match/0.9",
+                        "User-Agent": f"Kling-Match/{__version__}",
                         "Range": f"bytes={downloaded}-",
                     }
                 )
