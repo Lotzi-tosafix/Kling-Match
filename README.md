@@ -2,6 +2,9 @@
 
 # 🎵 Kling-Match
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)](https://github.com/Lotzi-tosafix/Kling-Match/releases)
+
 **Kling-Match** היא אפליקציית דסקטופ חינמית לWindows לחיתוך רינגטונים חכם — האפליקציה מנתחת את מבנה השיר בעזרת AI ומציגה את הקטעים המוזיקליים (פתיח, פזמון, בריג׳ וכו׳), כך שניתן לבחור בדיוק את הקטע הנכון.
 
 ---
@@ -149,11 +152,8 @@ Kling-Match/
 
 ## 📜 רישיון
 
-ראה [LICENSE](LICENSE) לפרטים.
+תוכנה זו מופצת תחת רישיון [GNU General Public License v3.0](LICENSE).
 
-מודלי AI כפופים לרישיונות משלהם:
-- SongFormer — [Apache 2.0](https://github.com/ASLP-lab/SongFormer/blob/main/LICENSE)
-- MuQ — [Apache 2.0](https://huggingface.co/OpenMuQ/MuQ-large-msd-iter)
-- MusicFM — [MIT](https://huggingface.co/minzwon/MusicFM)
+המשמעות בפשטות: אפשר להשתמש, לשנות ולהפיץ את הקוד — אך כל נגזרת חייבת להישאר פתוחה תחת אותו רישיון.
 
 </div>
