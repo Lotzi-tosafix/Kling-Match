@@ -18,7 +18,7 @@ jobs:
     steps:
       # ── 1. Checkout ─────────────────────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           submodules: recursive   # כולל SongFormer submodule
 
@@ -33,7 +33,7 @@ jobs:
 
       # ── 3. Python setup ─────────────────────────────────────────────────────
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: "3.11"
 
@@ -50,6 +50,8 @@ jobs:
           pip install einops ema-pytorch x-clip x-transformers
           pip install omegaconf ftfy msaf mir_eval jams cvxopt
           pip install scikit-learn networkx pooch qtawesome
+          # הסר enum34 אם הותקנה (backport ישן שמפריע ל-PyInstaller)
+          pip uninstall -y enum34 || echo "enum34 not installed"
 
       # ── 4. Download ffmpeg ───────────────────────────────────────────────────
       - name: Download ffmpeg
