@@ -69,22 +69,14 @@ def _app_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def _version_file() -> str:
-    return os.path.join(_app_root(), "version.txt")
-
-
 def _install_type_file() -> str:
     return os.path.join(_app_root(), "install_type.txt")
 
 
 def get_local_version() -> str:
-    """Read version from version.txt. Falls back to package __version__."""
-    try:
-        with open(_version_file(), encoding="utf-8") as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        from kling_match import __version__
-        return __version__
+    """Read version from the package. Always consistent with the running code."""
+    from kling_match import __version__
+    return __version__
 
 
 def get_install_type() -> str:
