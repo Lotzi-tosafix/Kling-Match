@@ -32,8 +32,8 @@ if errorlevel 1 (
     echo ERROR: make_update_zip.py failed.
     pause & exit /b 1
 )
-:: שנה שם ל-Kling-Match-VERSION-update.zip
-copy /y "dist\update.zip" "dist\Kling-Match-%VERSION%-update.zip"
+:: שנה שם ל-Kling-Match-update.zip
+copy /y "dist\update.zip" "dist\Kling-Match-update.zip"
 del "dist\update.zip"
 echo update.zip — Done.
 
@@ -63,9 +63,9 @@ echo [3/3] Building portable ZIP...
 copy /y "build\install_type_portable.txt" "dist\Kling-Match\install_type.txt"
 
 :: צור portable.zip דרך Python
-set PORTABLE_ZIP=dist\Kling-Match-%VERSION%-portable.zip
+set PORTABLE_ZIP=dist\Kling-Match-portable.zip
 if exist "%PORTABLE_ZIP%" del "%PORTABLE_ZIP%"
-python -c "import shutil, os; shutil.make_archive(os.path.join('dist', 'Kling-Match-%VERSION%-portable'), 'zip', os.path.join('dist', 'Kling-Match'))"
+python -c "import shutil, os; shutil.make_archive(os.path.join('dist', 'Kling-Match-portable'), 'zip', os.path.join('dist', 'Kling-Match'))"
 if errorlevel 1 (
     echo ERROR: Failed to create portable ZIP.
     pause & exit /b 1

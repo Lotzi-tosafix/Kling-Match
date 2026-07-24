@@ -86,8 +86,7 @@ jobs:
           PYTHONUTF8: "1"
         run: |
           python build\make_update_zip.py
-          $v = "${{ steps.ver.outputs.VERSION }}"
-          Move-Item "dist\update.zip" "dist\Kling-Match-$v-update.zip"
+          Move-Item "dist\update.zip" "dist\Kling-Match-update.zip"
 
       # ── 8. Build installer (Inno Setup) ────────────────────────────────────
       - name: Install Inno Setup
@@ -104,9 +103,8 @@ jobs:
       - name: Build portable ZIP
         shell: pwsh
         run: |
-          $v = "${{ steps.ver.outputs.VERSION }}"
           Copy-Item "build\install_type_portable.txt" "dist\Kling-Match\install_type.txt" -Force
-          Compress-Archive -Path "dist\Kling-Match\*" -DestinationPath "dist\Kling-Match-$v-portable.zip"
+          Compress-Archive -Path "dist\Kling-Match\*" -DestinationPath "dist\Kling-Match-portable.zip"
 
       # ── 10. Create GitHub Release (draft) ──────────────────────────────────
       - name: Create GitHub Release
@@ -117,9 +115,9 @@ jobs:
           $v   = "${{ steps.ver.outputs.VERSION }}"
           $tag = "${{ steps.ver.outputs.TAG }}"
           gh release create "$tag" `
-            "dist\installer\Kling-Match-$v-setup.exe#Kling-Match-$v-setup.exe" `
-            "dist\Kling-Match-$v-portable.zip#Kling-Match-$v-portable.zip" `
-            "dist\Kling-Match-$v-update.zip#update.zip" `
+            "dist\installer\Kling-Match-setup.exe#Kling-Match-setup.exe" `
+            "dist\Kling-Match-portable.zip#Kling-Match-portable.zip" `
+            "dist\Kling-Match-update.zip#update.zip" `
             --title "Kling-Match $v" `
             --notes "Release $v" `
             --draft

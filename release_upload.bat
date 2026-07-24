@@ -21,9 +21,9 @@ if errorlevel 1 (
 )
 
 :: ── ודא שכל הקבצים קיימים ────────────────────────────────────────────────────
-set INSTALLER=dist\installer\Kling-Match-%VERSION%-setup.exe
-set PORTABLE=dist\Kling-Match-%VERSION%-portable.zip
-set UPDATE=dist\Kling-Match-%VERSION%-update.zip
+set INSTALLER=dist\installer\Kling-Match-setup.exe
+set PORTABLE=dist\Kling-Match-portable.zip
+set UPDATE=dist\Kling-Match-update.zip
 
 set MISSING=0
 if not exist "%INSTALLER%" (echo MISSING: %INSTALLER% & set MISSING=1)
@@ -46,8 +46,8 @@ echo.
 :: ── צור release ב-GitHub ─────────────────────────────────────────────────────
 echo Creating GitHub release %TAG%...
 gh release create "%TAG%" ^
-    "%INSTALLER%#Kling-Match-%VERSION%-setup.exe" ^
-    "%PORTABLE%#Kling-Match-%VERSION%-portable.zip" ^
+    "%INSTALLER%#Kling-Match-setup.exe" ^
+    "%PORTABLE%#Kling-Match-portable.zip" ^
     "%UPDATE%#update.zip" ^
     --title "Kling-Match %VERSION%" ^
     --notes "Release %VERSION%" ^
