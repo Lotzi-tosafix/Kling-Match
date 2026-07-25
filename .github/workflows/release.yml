@@ -124,7 +124,7 @@ jobs:
             "dist\installer\Kling-Match-setup.exe#Kling-Match-setup.exe" `
             "dist\Kling-Match-portable.zip#Kling-Match-portable.zip" `
             "dist\Kling-Match-update.zip#update.zip" `
-            "dist\updater\updater.exe#updater.exe" `
+            "dist\updater.exe#updater.exe" `
             --title "Kling-Match $v" `
             --notes "Release $v" `
             --draft

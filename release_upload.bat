@@ -24,7 +24,7 @@ if errorlevel 1 (
 set INSTALLER=dist\installer\Kling-Match-setup.exe
 set PORTABLE=dist\Kling-Match-portable.zip
 set UPDATE=dist\Kling-Match-update.zip
-set UPDATER=dist\updater\updater.exe
+set UPDATER=dist\updater.exe
 
 set MISSING=0
 if not exist "%INSTALLER%" (echo MISSING: %INSTALLER% & set MISSING=1)
