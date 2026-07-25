@@ -24,11 +24,13 @@ if errorlevel 1 (
 set INSTALLER=dist\installer\Kling-Match-setup.exe
 set PORTABLE=dist\Kling-Match-portable.zip
 set UPDATE=dist\Kling-Match-update.zip
+set UPDATER=dist\updater\updater.exe
 
 set MISSING=0
 if not exist "%INSTALLER%" (echo MISSING: %INSTALLER% & set MISSING=1)
 if not exist "%PORTABLE%"  (echo MISSING: %PORTABLE%  & set MISSING=1)
 if not exist "%UPDATE%"    (echo MISSING: %UPDATE%     & set MISSING=1)
+if not exist "%UPDATER%"   (echo MISSING: %UPDATER%    & set MISSING=1)
 
 if "%MISSING%"=="1" (
     echo.
@@ -49,6 +51,7 @@ gh release create "%TAG%" ^
     "%INSTALLER%#Kling-Match-setup.exe" ^
     "%PORTABLE%#Kling-Match-portable.zip" ^
     "%UPDATE%#update.zip" ^
+    "%UPDATER%#updater.exe" ^
     --title "Kling-Match %VERSION%" ^
     --notes "Release %VERSION%" ^
     --draft

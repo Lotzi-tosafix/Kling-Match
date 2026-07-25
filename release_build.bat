@@ -24,9 +24,19 @@ if exist "dist\Kling-Match\models" (
     rmdir /s /q "dist\Kling-Match\models"
 )
 
-:: ── שלב 1: update.zip ────────────────────────────────────────────────────────
+:: ── שלב 1: בנה updater.exe ──────────────────────────────────────────────────
 echo.
-echo [1/3] Building update.zip...
+echo [1/4] Building updater.exe...
+pyinstaller updater\updater.spec --noconfirm
+if errorlevel 1 (
+    echo ERROR: updater build failed.
+    pause & exit /b 1
+)
+echo updater.exe — Done.
+
+:: ── שלב 2: update.zip ────────────────────────────────────────────────────────
+echo.
+echo [2/4] Building update.zip...
 python build\make_update_zip.py
 if errorlevel 1 (
     echo ERROR: make_update_zip.py failed.
@@ -37,9 +47,9 @@ copy /y "dist\update.zip" "dist\Kling-Match-update.zip"
 del "dist\update.zip"
 echo update.zip — Done.
 
-:: ── שלב 2: Inno Setup installer ──────────────────────────────────────────────
+:: ── שלב 3: Inno Setup installer ──────────────────────────────────────────────
 echo.
-echo [2/3] Building installer...
+echo [3/4] Building installer...
 set ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe
 if not exist "%ISCC%" set ISCC=C:\Program Files\Inno Setup 6\ISCC.exe
 if not exist "%ISCC%" (
@@ -54,10 +64,10 @@ if errorlevel 1 (
 )
 echo Installer — Done.
 
-:: ── שלב 3: Portable ZIP ──────────────────────────────────────────────────────
+:: ── שלב 4: Portable ZIP ──────────────────────────────────────────────────────
 :portable
 echo.
-echo [3/3] Building portable ZIP...
+echo [4/4] Building portable ZIP...
 
 :: כתוב סמן portable
 copy /y "build\install_type_portable.txt" "dist\Kling-Match\install_type.txt"

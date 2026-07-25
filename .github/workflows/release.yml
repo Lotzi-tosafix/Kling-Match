@@ -71,6 +71,12 @@ jobs:
         run: |
           pyinstaller build\Kling-Match.spec --noconfirm
 
+      # ── 5b. Build updater.exe ────────────────────────────────────────────────
+      - name: Build updater.exe
+        shell: pwsh
+        run: |
+          pyinstaller updater\updater.spec --noconfirm
+
       # ── 6. Remove models from dist (they download at runtime) ───────────────
       - name: Remove models from dist
         shell: pwsh
@@ -118,6 +124,7 @@ jobs:
             "dist\installer\Kling-Match-setup.exe#Kling-Match-setup.exe" `
             "dist\Kling-Match-portable.zip#Kling-Match-portable.zip" `
             "dist\Kling-Match-update.zip#update.zip" `
+            "dist\updater\updater.exe#updater.exe" `
             --title "Kling-Match $v" `
             --notes "Release $v" `
             --draft
