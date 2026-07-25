@@ -76,6 +76,8 @@ jobs:
         shell: pwsh
         run: |
           pyinstaller updater\updater.spec --noconfirm
+          # העתק ל-dist\Kling-Match\ כך שייכלל ב-installer וב-portable
+          Copy-Item "dist\updater.exe" "dist\Kling-Match\updater.exe" -Force
 
       # ── 6. Remove models from dist (they download at runtime) ───────────────
       - name: Remove models from dist

@@ -32,6 +32,8 @@ if errorlevel 1 (
     echo ERROR: updater build failed.
     pause & exit /b 1
 )
+:: העתק ל-dist\Kling-Match\ כך שייכלל ב-installer וב-portable
+copy /y "dist\updater.exe" "dist\Kling-Match\updater.exe"
 echo updater.exe — Done.
 
 :: ── שלב 2: update.zip ────────────────────────────────────────────────────────

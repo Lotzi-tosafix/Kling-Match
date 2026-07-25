@@ -59,12 +59,24 @@ def _install_type_file() -> str:
 
 
 def _target_app_dir() -> str:
-    """התיקייה שבה נמצא קוד Python — זו שmake_update_zip.py ארז."""
+    """
+    התיקייה שבה נמצא קוד Python — זו שmake_update_zip.py ארז.
+    תומך בשתי פריסות PyInstaller:
+      flat:     <install>/app/           (גרסאות חדשות)
+      internal: <install>/_internal/app/ (גרסאות ישנות)
+    """
     if getattr(sys, "frozen", False):
-        # _internal\app\ ליד ה-EXE
-        return os.path.join(_app_root(), "_internal", "app")
-    # dev mode — שורש הריפו
+        root = _app_root()
+        flat = os.path.join(root, "app")
+        if os.path.isdir(flat):
+            return flat
+        return os.path.join(root, "_internal", "app")
     return _app_root()
+
+
+def _updater_exe_path() -> str:
+    """נתיב ל-updater.exe שמגיע עם ההתקנה — ליד Kling-Match.exe."""
+    return os.path.join(_app_root(), "updater.exe")
 
 
 def get_local_version() -> str:
@@ -133,28 +145,25 @@ def check_for_update() -> Optional[dict]:
 
     # update.zip — מקבל גם "Kling-Match-update.zip" (גרסאות ישנות)
     update_asset = _find_asset(assets, "update.zip", "kling-match-update.zip")
-    # updater.exe
-    updater_asset = _find_asset(assets, "updater.exe")
 
-    if not update_asset or not updater_asset:
-        return None   # assets חסרים — לא ניתן לעדכן
+    if not update_asset:
+        return None
 
     return {
-        "tag":         data.get("tag_name", remote_tag),
-        "version":     remote_tag,
-        "notes":       data.get("body", "").strip(),
-        "update_url":  update_asset["browser_download_url"],
-        "updater_url": updater_asset["browser_download_url"],
+        "tag":        data.get("tag_name", remote_tag),
+        "version":    remote_tag,
+        "notes":      data.get("body", "").strip(),
+        "update_url": update_asset["browser_download_url"],
     }
 
 
 # ── Download updater.exe thread ────────────────────────────────────────────────
 
 class _DownloadUpdaterThread(QThread):
-    """מוריד את updater.exe לתיקיית temp ומדווח התקדמות."""
-    progress = Signal(int)   # 0-100
-    done     = Signal(str)   # נתיב לקובץ updater.exe שהורד
-    failed   = Signal(str)   # הודעת שגיאה
+    """מוריד את update.zip לתיקיית temp ומדווח התקדמות."""
+    progress = Signal(int)
+    done     = Signal(str)   # נתיב לקובץ update.zip שהורד
+    failed   = Signal(str)
 
     def __init__(self, url: str, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
@@ -169,7 +178,7 @@ class _DownloadUpdaterThread(QThread):
             with urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT) as resp:
                 total = int(resp.headers.get("Content-Length", 0))
                 tmp = tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".exe", prefix="kling_updater_"
+                    delete=False, suffix=".zip", prefix="kling_update_"
                 )
                 downloaded = 0
                 while True:
@@ -327,33 +336,39 @@ class UpdateDialog(QDialog):
     def _start_update(self) -> None:
         self._update_btn.setEnabled(False)
         self._skip_btn.setEnabled(False)
+
+        # בדוק שה-updater.exe קיים לפני שמתחילים
+        updater = _updater_exe_path()
+        if not os.path.isfile(updater):
+            self._on_error(
+                f"לא נמצא updater.exe במיקום:\n{updater}\n\n"
+                "נסה להתקין מחדש מ-Kling-Match-setup.exe"
+            )
+            return
+
         self._progress.setVisible(True)
-        self._status_lbl.setText("מוריד כלי עדכון...")
+        self._status_lbl.setText("מוריד עדכון...")
         self._status_lbl.setVisible(True)
 
-        self._thread = _DownloadUpdaterThread(self._info["updater_url"], self)
+        self._thread = _DownloadUpdaterThread(self._info["update_url"], self)
         self._thread.progress.connect(self._progress.setValue)
-        self._thread.done.connect(self._on_updater_downloaded)
+        self._thread.done.connect(self._on_zip_downloaded)
         self._thread.failed.connect(self._on_error)
         self._thread.start()
 
-    def _on_updater_downloaded(self, updater_exe: str) -> None:
+    def _on_zip_downloaded(self, zip_path: str) -> None:
         self._status_lbl.setText("מפעיל עדכון...")
 
+        updater       = _updater_exe_path()
         target_dir    = _target_app_dir()
-        exe_to_restart = sys.executable  # Kling-Match.exe
+        exe_to_restart = sys.executable
 
-        # הפעל את updater.exe בנפרד
         subprocess.Popen(
-            [updater_exe,
-             self._info["update_url"],
-             target_dir,
-             exe_to_restart],
+            [updater, zip_path, target_dir, exe_to_restart],
             creationflags=subprocess.DETACHED_PROCESS
             | subprocess.CREATE_NEW_PROCESS_GROUP,
         )
 
-        # סגור את עצמנו כדי שה-updater יוכל להחליף קבצים
         import PyQt6.QtWidgets as _qw
         _qw.QApplication.quit()
 

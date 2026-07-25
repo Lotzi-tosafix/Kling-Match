@@ -12,12 +12,24 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 # תמיכה בהרצה מכל מיקום — הנתיב יחושב יחסית לשורש הריפו
 _repo_root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-app_dir   = os.path.join(_repo_root, "dist", "Kling-Match", "_internal", "app")
-out_zip   = os.path.join(_repo_root, "dist", "update.zip")
+_dist_root = os.path.join(_repo_root, "dist", "Kling-Match")
 
-if not os.path.isdir(app_dir):
-    print(f"ERROR: תיקייה לא קיימת: {app_dir}")
+# PyInstaller newer versions use flat layout (app/ directly in dist\Kling-Match\)
+# Older versions used _internal\app\ — support both
+_flat_app  = os.path.join(_dist_root, "app")
+_internal  = os.path.join(_dist_root, "_internal", "app")
+
+if os.path.isdir(_flat_app):
+    app_dir = _flat_app
+elif os.path.isdir(_internal):
+    app_dir = _internal
+else:
+    print(f"ERROR: לא נמצאה תיקיית app ב-{_dist_root}")
+    print(f"  בדקתי: {_flat_app}")
+    print(f"  בדקתי: {_internal}")
     sys.exit(1)
+
+out_zip = os.path.join(_repo_root, "dist", "update.zip")
 
 # סיומות שמדלגים עליהן (מודלים כבדים)
 SKIP_EXTS = {".pt", ".pth", ".bin", ".safetensors", ".ckpt", ".onnx", ".npy"}
